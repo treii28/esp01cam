@@ -43,8 +43,16 @@
 #ifndef FS_H
 #include <FS.h>
 #endif
+#ifndef ATTACHSPIFFS
+#define ATTACHSPIFFS 0
+#endif
+#ifndef USESPIFFSEDITOR
+#define USESPIFFSEDITOR 0
+#endif
+#if USESPIFFSEDITOR > 0
 #ifndef SPIFFSEditor_H_
 #include <SPIFFSEditor.h>
+#endif
 #endif
 #ifndef SoftwareSerial_h
 #include <SoftwareSerial.h>
@@ -90,16 +98,24 @@
 //</editor-fold desc="external-defines">
 //<editor-fold desc="camera-defines">
 #define DEFAULT_IMAGE_FILENAME "/latest.jpg"
+#define CAMERABUFFSIZ 100
+#define CAMERADELAY 10
+
 #define VC0706_RESET  0x26
 #define VC0706_GEN_VERSION 0x11
-#define VC0706_SET_PORT 0x24
 #define VC0706_READ_FBUF 0x32
 #define VC0706_GET_FBUF_LEN 0x34
 #define VC0706_FBUF_CTRL 0x36
-#define VC0706_DOWNSIZE_CTRL 0x54
-#define VC0706_DOWNSIZE_STATUS 0x55
 #define VC0706_READ_DATA 0x30
 #define VC0706_WRITE_DATA 0x31
+#define VC0706_STOPCURRENTFRAME 0x0
+#define VC0706_640x480 0x00
+#define VC0706_320x240 0x11
+#define VC0706_160x120 0x22
+
+#define VC0706_DOWNSIZE_CTRL 0x54
+#define VC0706_DOWNSIZE_STATUS 0x55
+#define VC0706_SET_PORT 0x24
 #define VC0706_COMM_MOTION_CTRL 0x37
 #define VC0706_COMM_MOTION_STATUS 0x38
 #define VC0706_COMM_MOTION_DETECTED 0x39
@@ -107,25 +123,15 @@
 #define VC0706_MOTION_STATUS 0x43
 #define VC0706_TVOUT_CTRL 0x44
 #define VC0706_OSD_ADD_CHAR 0x45
-
-#define VC0706_STOPCURRENTFRAME 0x0
 #define VC0706_STOPNEXTFRAME 0x1
 #define VC0706_RESUMEFRAME 0x3
 #define VC0706_STEPFRAME 0x2
-
-#define VC0706_640x480 0x00
-#define VC0706_320x240 0x11
-#define VC0706_160x120 0x22
-
 #define VC0706_MOTIONCONTROL 0x0
 #define VC0706_UARTMOTION 0x01
 #define VC0706_ACTIVATEMOTION 0x01
-
 #define VC0706_SET_ZOOM 0x52
 #define VC0706_GET_ZOOM 0x53
 
-#define CAMERABUFFSIZ 100
-#define CAMERADELAY 10
 //</editor-fold desc="camera-defines">
 //<editor-fold desc="global-variables">
 bool hasCamera  = false;
@@ -629,9 +635,13 @@ void initHttp() {
     //httpserver.addHandler(&ws);
     // attach AsyncEventSource
     //httpserver.addHandler(&events);
+#if USESPIFFSEDITOR > 0
     httpserver.addHandler(new SPIFFSEditor("admin", ADMIN_PASSWORD, SPIFFS));
+#endif
+#if ATTACHSPIFFS > 0
     // attach filesystem root at URL /fs
     httpserver.serveStatic("/spiffs", SPIFFS, "/");
+#endif
 
     httpserver.on("/snap", HTTP_GET, snapPic);
     httpserver.on("/index.html", HTTP_ANY, [](AsyncWebServerRequest *request){
